@@ -63,6 +63,7 @@ spec:
               path: /ready
               port: 8080
             periodSeconds: 1
+            timeoutSeconds: 2
             failureThreshold: 1
           # Boucle d'attaque figée => /healthz renvoie 500 => redémarrage du conteneur
           livenessProbe:
@@ -71,6 +72,8 @@ spec:
               port: 8080
             initialDelaySeconds: 5
             periodSeconds: 3
+            # Laisse un peu de marge si le nœud est chargé (par défaut : 1 s)
+            timeoutSeconds: 3
             failureThreshold: 3
           resources:
             requests:

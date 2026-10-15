@@ -55,12 +55,13 @@ r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, password=REDIS_PASSWORD,
                 decode_responses=True, socket_timeout=2, socket_connect_timeout=2)
 
 # Décrément des PV + détection de mort, atomiques côté Redis.
-# KEYS[1] = hash cible, KEYS[2] = hash attaquant ; ARGV[1] = dégâts, ARGV[2] = round courant
-# Retour : {code, hp, status} avec code = 1 (tué), 0 (touché), -1 (cible invalide)
+# KEYS[1] = hash cible, KEYS[2] = hash attaquant, KEYS[3] = round courant ; ARGV[1] = dégâts
+# Retour : {code, hp, status, round} avec code = 1 (tué), 0 (touché), -1 (cible invalide)
 HIT_LUA = """
+local round = redis.call('GET', KEYS[3]) or '0'
 local st = redis.call('HMGET', KEYS[1], 'status', 'round', 'hp')
-if st[1] ~= 'alive' or st[2] ~= ARGV[2] then
-  return {-1, tonumber(st[3] or 0), st[1] or 'unknown'}
+if st[1] ~= 'alive' or st[2] ~= round then
+  return {-1, tonumber(st[3] or 0), st[1] or 'unknown', round}
 end
 local hp = redis.call('HINCRBY', KEYS[1], 'hp', -tonumber(ARGV[1]))
 if hp <= 0 then
@@ -68,9 +69,9 @@ if hp <= 0 then
   if KEYS[1] ~= KEYS[2] and redis.call('EXISTS', KEYS[2]) == 1 then
     redis.call('HINCRBY', KEYS[2], 'kills', 1)
   end
-  return {1, 0, 'dead'}
+  return {1, 0, 'dead', round}
 end
-return {0, hp, 'alive'}
+return {0, hp, 'alive', round}
 """
 hit_script = r.register_script(HIT_LUA)
 
@@ -223,30 +224,35 @@ def hit():
     if self_hit:
         damage = max(1, int(round(damage * 0.3)))
 
-    current_round = r.get(KEY_ROUND) or "0"
-    code, hp, status = hit_script(keys=[MY_KEY, f"pr:fighter:{attacker_pod}"],
-                                  args=[damage, current_round])
+    code, hp, status, current_round = hit_script(
+        keys=[MY_KEY, f"pr:fighter:{attacker_pod}", KEY_ROUND], args=[damage])
     if code == -1:
         return jsonify(error="hors combat", status=status), (410 if status == "dead" else 409)
 
     killed = code == 1
-    # Chaque coup est mémorisé (60 derniers) pour que l'arène puisse l'animer
-    hit_record = json.dumps({"ts": time.time(), "a": attacker_pod, "t": POD_NAME, "d": damage,
-                             "c": crit, "k": killed, "r": int(current_round)})
-    pipe = r.pipeline()
-    pipe.lpush(KEY_HITS, hit_record)
-    pipe.ltrim(KEY_HITS, 0, 59)
-    pipe.execute()
     if self_hit:
         if killed:
-            push_event("kill", f"🤦 {MY_NAME} s'est éliminé{E} tout{E} seul{E}. Darwin approuve.")
+            event = ("kill", f"🤦 {MY_NAME} s'est éliminé{E} tout{E} seul{E}. Darwin approuve.")
         else:
-            push_event("self", "🤕 " + random.choice(SELF_HIT_MESSAGES).format(
+            event = ("self", "🤕 " + random.choice(SELF_HIT_MESSAGES).format(
                 name=MY_NAME, dmg=damage, e=E, soi="elle-même" if E else "lui-même"))
     elif killed:
-        push_event("kill", f"☠️ {attacker_name} {random.choice(KILL_VERBS)} {MY_NAME}")
+        event = ("kill", f"☠️ {attacker_name} {random.choice(KILL_VERBS)} {MY_NAME}")
     elif crit:
-        push_event("crit", f"💥 CRITIQUE ! {attacker_name} inflige {damage} dégâts à {MY_NAME}")
+        event = ("crit", f"💥 CRITIQUE ! {attacker_name} inflige {damage} dégâts à {MY_NAME}")
+    else:
+        event = None  # coup normal : pas d'événement (trop verbeux)
+
+    # Un seul aller-retour Redis : le coup (60 derniers, pour que l'arène l'anime) + l'événement
+    now = time.time()
+    pipe = r.pipeline()
+    pipe.lpush(KEY_HITS, json.dumps({"ts": now, "a": attacker_pod, "t": POD_NAME, "d": damage,
+                                     "c": crit, "k": killed, "r": int(current_round)}))
+    pipe.ltrim(KEY_HITS, 0, 59)
+    if event:
+        pipe.lpush(KEY_EVENTS, json.dumps({"ts": now, "type": event[0], "text": event[1]}, ensure_ascii=False))
+        pipe.ltrim(KEY_EVENTS, 0, 49)
+    pipe.execute()
     if killed:
         log.info("☠  %s éliminé par %s", POD_NAME, attacker_pod)
 
