@@ -17,6 +17,12 @@
   </header>
 
   <main class="layout">
+    <div class="main-col">
+    <div class="scene-wrap">
+      <canvas id="scene" aria-label="L'arène : les guerriers se battent en direct"></canvas>
+    </div>
+
+    <h2 class="roster-title">Registre des pods</h2>
     <section id="grid" class="grid" aria-label="Combattants">
       {% for f in s.fighters %}
       <article class="card {{ f.status }}" data-pod="{{ f.pod }}">
@@ -40,6 +46,7 @@
       <p class="empty">Aucun guerrier dans l'arène… <code>kubectl scale deploy/guerrier --replicas=6</code></p>
       {% endfor %}
     </section>
+    </div>
 
     <aside class="side">
       <section class="panel">
@@ -60,11 +67,15 @@
   <div id="victory" class="victory{% if s.state == 'victory' %} show{% endif %}" aria-live="polite">
     <div class="victory-inner">
       <div class="trophy">🏆</div>
+      <div>
       <div id="victory-name" class="victory-name">{% if s.winner %}{{ s.winner.emoji }} {{ s.winner.name }}{% else %}Double KO{% endif %}</div>
       <div id="victory-sub" class="victory-sub">{% if s.winner %}remporte le round {{ s.round }} avec {{ s.winner.kills }} élimination(s){% else %}personne ne gagne{% endif %}</div>
+      </div>
     </div>
   </div>
 
+  <script id="initial-state" type="application/json">{{ s | tojson }}</script>
+  <script src="{{ url_for('static', filename='scene.js') }}"></script>
   <script src="{{ url_for('static', filename='arena.js') }}"></script>
 </body>
 </html>

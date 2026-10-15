@@ -121,6 +121,8 @@
       return li;
     });
 
+    if (window.ArenaScene) window.ArenaScene.update(s);
+
     const victory = document.getElementById("victory");
     victory.classList.toggle("show", s.state === "victory");
     if (s.state === "victory") {

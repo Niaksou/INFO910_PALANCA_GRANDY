@@ -26,6 +26,7 @@ KEY_VICTORY_AT = "pr:game:victory_at"
 KEY_WINNER = "pr:game:winner"
 KEY_FIGHTERS = "pr:fighters"
 KEY_EVENTS = "pr:events"
+KEY_HITS = "pr:hits"
 KEY_HOF = "pr:halloffame"
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", stream=sys.stdout)
@@ -173,8 +174,9 @@ def game_state():
     pipe.get(KEY_ROUND)
     pipe.get(KEY_WINNER)
     pipe.lrange(KEY_EVENTS, 0, 29)
+    pipe.lrange(KEY_HITS, 0, 59)
     pipe.zrevrange(KEY_HOF, 0, 9, withscores=True)
-    state, current_round, winner_pod, events, hof = pipe.execute()
+    state, current_round, winner_pod, events, hits, hof = pipe.execute()
     current_round = int(current_round or 0)
 
     fighters = []
@@ -207,6 +209,7 @@ def game_state():
         "present": len(fighters),
         "fighters": fighters,
         "events": [json.loads(e) for e in events],
+        "hits": [json.loads(h) for h in hits],
         "halloffame": [{"name": name, "wins": int(score)} for name, score in hof],
         "winner": winner,
     }
@@ -221,7 +224,7 @@ def index():
         initial = game_state()
     except redis.RedisError:
         initial = {"state": "waiting", "round": 0, "alive": 0, "present": 0, "fighters": [],
-                   "events": [], "halloffame": [], "winner": None}
+                   "events": [], "hits": [], "halloffame": [], "winner": None}
     return render_template("index.html", s=initial)
 
 

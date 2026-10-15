@@ -38,6 +38,7 @@ KEY_STATE = "pr:game:state"
 KEY_ROUND = "pr:game:round"
 KEY_FIGHTERS = "pr:fighters"
 KEY_EVENTS = "pr:events"
+KEY_HITS = "pr:hits"
 MY_KEY = f"pr:fighter:{POD_NAME}"
 MY_HEARTBEAT = f"pr:heartbeat:{POD_NAME}"
 
@@ -88,6 +89,7 @@ SELF_HIT_MESSAGES = [
 # --- État local --------------------------------------------------------------
 last_tick = time.time()
 frozen = threading.Event()
+stopping = threading.Event()
 registered = False
 
 
@@ -151,11 +153,10 @@ def attack_once():
         registered = True
         return
     pipe = r.pipeline()
-    pipe.set(MY_HEARTBEAT, "1", ex=5)
     pipe.get(KEY_STATE)
     pipe.get(KEY_ROUND)
     pipe.hmget(MY_KEY, "status", "round")
-    _, state, current_round, (status, my_round) = pipe.execute()
+    state, current_round, (status, my_round) = pipe.execute()
     if status is None:
         # Mon hash a disparu (Redis vidé, nettoyage de l'arène…) : je me réinscris.
         register()
@@ -181,6 +182,17 @@ def attack_once():
     data = resp.json()
     log.info("⚔  %s → %s : -%s%s, reste %s PV%s", POD_NAME, data["target_pod"], damage,
              " CRIT" if crit else "", data["hp"], " ☠ KILL" if data["killed"] else "")
+
+
+def heartbeat_loop():
+    # Présence (TTL 5 s) rafraîchie chaque seconde, dans son propre thread : une attaque
+    # lente (timeouts réseau, Redis ralenti) ne fait pas croire à l'arène que le pod a disparu.
+    while not stopping.is_set():
+        try:
+            r.set(MY_HEARTBEAT, "1", ex=5)
+        except redis.RedisError as e:
+            log.warning("heartbeat : %s", e)
+        time.sleep(1)
 
 
 def attack_loop():
@@ -218,6 +230,13 @@ def hit():
         return jsonify(error="hors combat", status=status), (410 if status == "dead" else 409)
 
     killed = code == 1
+    # Chaque coup est mémorisé (60 derniers) pour que l'arène puisse l'animer
+    hit_record = json.dumps({"ts": time.time(), "a": attacker_pod, "t": POD_NAME, "d": damage,
+                             "c": crit, "k": killed, "r": int(current_round)})
+    pipe = r.pipeline()
+    pipe.lpush(KEY_HITS, hit_record)
+    pipe.ltrim(KEY_HITS, 0, 59)
+    pipe.execute()
     if self_hit:
         if killed:
             push_event("kill", f"🤦 {MY_NAME} s'est éliminé{E} tout{E} seul{E}. Darwin approuve.")
@@ -276,6 +295,7 @@ def identity():
 
 # --- Arrêt propre ------------------------------------------------------------
 def on_sigterm(signum, frame):
+    stopping.set()
     try:
         if frozen.is_set():
             # SIGTERM envoyé par le kubelet après l'échec de la livenessProbe :
@@ -298,6 +318,7 @@ def on_sigterm(signum, frame):
 
 def main():
     signal.signal(signal.SIGTERM, on_sigterm)
+    threading.Thread(target=heartbeat_loop, daemon=True).start()
     threading.Thread(target=attack_loop, daemon=True).start()
     serve(app, host="0.0.0.0", port=8080, threads=8)
 
