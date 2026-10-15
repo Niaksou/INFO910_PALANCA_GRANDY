@@ -1,0 +1,28 @@
+# Notion : ConfigMap. La même ConfigMap est consommée de deux façons :
+#   1) en variables d'environnement (envFrom) pour les réglages simples ;
+#   2) en fichier monté (/config/classes.json) pour une configuration structurée.
+# Changer une valeur puis faire `kubectl rollout restart` change les règles du jeu sans rebuild d'image.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jeu-config
+  namespace: pod-royale
+  labels:
+    app.kubernetes.io/part-of: pod-royale
+data:
+  # --- Usage n°1 : variables d'environnement (envFrom) ---
+  ATTACK_INTERVAL_MS: "1200"
+  VICTORY_PAUSE_S: "8"
+  REDIS_HOST: "redis.pod-royale.svc.cluster.local"
+  REDIS_PORT: "6379"
+  TARGET_URL: "http://guerrier.pod-royale.svc.cluster.local:8080/hit"
+  # --- Usage n°2 : fichier monté dans /config ---
+  classes.json: |
+    [
+      {"id": "barbare", "emoji": "🪓", "label": "Barbare",  "max_hp": 130, "dmg_min": 8,  "dmg_max": 14, "crit_chance": 0.10, "crit_mult": 2.0, "weight": 3},
+      {"id": "mage",    "emoji": "🔮", "label": "Mage",     "max_hp": 80,  "dmg_min": 4,  "dmg_max": 24, "crit_chance": 0.15, "crit_mult": 2.0, "weight": 2},
+      {"id": "archer",  "emoji": "🏹", "label": "Archer",   "max_hp": 100, "dmg_min": 9,  "dmg_max": 12, "crit_chance": 0.25, "crit_mult": 2.5, "weight": 3},
+      {"id": "paladin", "emoji": "🛡️", "label": "Paladin",  "max_hp": 160, "dmg_min": 5,  "dmg_max": 9,  "crit_chance": 0.05, "crit_mult": 2.0, "weight": 2},
+      {"id": "gobelin", "emoji": "👺", "label": "Gobelin",  "max_hp": 60,  "dmg_min": 1,  "dmg_max": 35, "crit_chance": 0.20, "crit_mult": 1.5, "weight": 1},
+      {"id": "sysadmin","emoji": "🧑‍💻","label": "Sysadmin", "max_hp": 110, "dmg_min": 6,  "dmg_max": 16, "crit_chance": 0.12, "crit_mult": 3.0, "weight": 1}
+    ]

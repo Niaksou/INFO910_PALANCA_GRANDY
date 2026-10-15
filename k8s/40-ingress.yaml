@@ -1,0 +1,22 @@
+# Notion : Ingress. Seule l'arène est exposée hors du cluster, via le nom d'hôte
+# pod-royale.local et le contrôleur nginx. Les guerriers et Redis restent internes.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pod-royale
+  namespace: pod-royale
+  labels:
+    app.kubernetes.io/part-of: pod-royale
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: pod-royale.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: arena
+                port:
+                  number: 80

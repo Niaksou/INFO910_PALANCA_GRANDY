@@ -1,0 +1,18 @@
+# Notion : Service et load balancing. Chaque attaque vise ce Service : kube-proxy choisit
+# au hasard un pod parmi les endpoints prêts (readiness). Pas exposé hors du cluster.
+apiVersion: v1
+kind: Service
+metadata:
+  name: guerrier
+  namespace: pod-royale
+  labels:
+    app: guerrier
+    app.kubernetes.io/part-of: pod-royale
+spec:
+  type: ClusterIP
+  selector:
+    app: guerrier
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

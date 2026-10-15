@@ -1,0 +1,74 @@
+# Notion : Deployment à un seul réplica + probes. L'arène est l'arbitre du jeu : elle sert
+# l'interface et gère les rounds. Elle lit aussi la ConfigMap (env + fichier) et le Secret.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arena
+  namespace: pod-royale
+  labels:
+    app: arena
+    app.kubernetes.io/part-of: pod-royale
+spec:
+  # Un seul réplica : c'est l'arbitre. Deux arbitres prendraient des décisions en double
+  # (deux rounds lancés, deux victoires comptées au tableau d'honneur…).
+  replicas: 1
+  selector:
+    matchLabels:
+      app: arena
+  # Recreate : on arrête l'ancien arbitre avant de démarrer le nouveau, jamais deux en même temps
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: arena
+        app.kubernetes.io/part-of: pod-royale
+    spec:
+      containers:
+        - name: arena
+          image: pod-royale/arena:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: jeu-config
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-auth
+                  key: REDIS_PASSWORD
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+          # /healthz vérifie que Redis répond à PING
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 3
+          # Seuil large : l'arène survit au redémarrage de redis-0 pendant la démo
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 20m
+              memory: 48Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+      volumes:
+        - name: config
+          configMap:
+            name: jeu-config
+            items:
+              - key: classes.json
+                path: classes.json

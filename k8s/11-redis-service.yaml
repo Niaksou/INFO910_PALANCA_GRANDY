@@ -1,0 +1,18 @@
+# Notion : Service ClusterIP et DNS interne. Les autres pods joignent Redis par
+# le nom stable redis.pod-royale.svc.cluster.local, quelle que soit l'IP du pod redis-0.
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: pod-royale
+  labels:
+    app: redis
+    app.kubernetes.io/part-of: pod-royale
+spec:
+  type: ClusterIP
+  selector:
+    app: redis
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: 6379

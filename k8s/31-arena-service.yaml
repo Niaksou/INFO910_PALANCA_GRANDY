@@ -1,0 +1,18 @@
+# Notion : Service ClusterIP avec port différent du conteneur (80 -> 8080).
+# C'est la porte d'entrée interne de l'arène, utilisée par l'Ingress (ou un port-forward).
+apiVersion: v1
+kind: Service
+metadata:
+  name: arena
+  namespace: pod-royale
+  labels:
+    app: arena
+    app.kubernetes.io/part-of: pod-royale
+spec:
+  type: ClusterIP
+  selector:
+    app: arena
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080

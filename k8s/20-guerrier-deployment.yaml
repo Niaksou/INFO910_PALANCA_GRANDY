@@ -1,0 +1,88 @@
+# Notion : Deployment (réplicas, RollingUpdate), probes, Downward API, ConfigMap, Secret, resources.
+# Chaque réplica est un guerrier. La readinessProbe retire les morts des endpoints du Service,
+# la livenessProbe redémarre un guerrier figé, et la Downward API donne au pod son propre nom.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: guerrier
+  namespace: pod-royale
+  labels:
+    app: guerrier
+    app.kubernetes.io/part-of: pod-royale
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: guerrier
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: guerrier
+        app.kubernetes.io/part-of: pod-royale
+    spec:
+      # Laisse le temps au guerrier d'annoncer sa mort (SIGTERM) avant le SIGKILL
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: guerrier
+          image: pod-royale/guerrier:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          # ConfigMap, usage n°1 : toutes les clés deviennent des variables d'environnement
+          envFrom:
+            - configMapRef:
+                name: jeu-config
+          env:
+            # Downward API : le pod connaît son nom, son IP et son nœud
+            - name: POD_NAME
+              valueFrom: { fieldRef: { fieldPath: metadata.name } }
+            - name: POD_IP
+              valueFrom: { fieldRef: { fieldPath: status.podIP } }
+            - name: NODE_NAME
+              valueFrom: { fieldRef: { fieldPath: spec.nodeName } }
+            # Secret : le mot de passe Redis n'est jamais écrit en clair ici
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-auth
+                  key: REDIS_PASSWORD
+          # ConfigMap, usage n°2 : la clé classes.json devient le fichier /config/classes.json
+          volumeMounts:
+            - name: config
+              mountPath: /config
+              readOnly: true
+          # Mort => /ready renvoie 503 => le pod sort des endpoints en ~1 s
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            periodSeconds: 1
+            failureThreshold: 1
+          # Boucle d'attaque figée => /healthz renvoie 500 => redémarrage du conteneur
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 3
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 20m
+              memory: 48Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+      volumes:
+        - name: config
+          configMap:
+            name: jeu-config
+            items:
+              - key: classes.json
+                path: classes.json

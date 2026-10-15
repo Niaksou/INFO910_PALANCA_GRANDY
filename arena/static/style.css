@@ -1,0 +1,238 @@
+:root {
+  --bg: #0d0b0a;
+  --panel: #17130f;
+  --panel-2: #201a14;
+  --line: #3a2c1e;
+  --text: #eadfcf;
+  --muted: #8f8170;
+  --gold: #e8b64c;
+  --red: #d63a2f;
+  --green: #4fbf5a;
+  --orange: #e8913a;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(214, 58, 47, 0.18), transparent 60%),
+    var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* --- En-tête ------------------------------------------------------------ */
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, #1a120c, transparent);
+}
+
+.top h1 {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 28px;
+  letter-spacing: 0.18em;
+  color: var(--text);
+}
+.top h1 span { color: var(--red); }
+
+.status { display: flex; align-items: center; gap: 16px; font-family: var(--mono); }
+.round b, .count b { color: var(--gold); }
+
+.badge {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  border: 1px solid currentColor;
+}
+.badge-waiting { color: var(--muted); }
+.badge-fighting { color: var(--red); animation: pulse 1s ease-in-out infinite; }
+.badge-victory { color: var(--gold); }
+
+@keyframes pulse { 50% { background: rgba(214, 58, 47, 0.2); } }
+
+/* --- Mise en page ------------------------------------------------------- */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 24px;
+  padding: 24px;
+}
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 1fr; padding: 16px; }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  align-content: start;
+}
+
+.empty { color: var(--muted); }
+.empty code { font-family: var(--mono); color: var(--gold); }
+
+/* --- Cartes ------------------------------------------------------------- */
+.card {
+  position: relative;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  transition: opacity 0.4s, filter 0.4s, border-color 0.3s;
+}
+.card.alive { border-color: #5a3b22; }
+
+.card-head { display: flex; gap: 10px; align-items: center; }
+.emoji { font-size: 30px; line-height: 1; }
+.who { min-width: 0; }
+.name {
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pod {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hpbar {
+  height: 10px;
+  margin: 12px 0 8px;
+  border-radius: 5px;
+  background: #2a211a;
+  overflow: hidden;
+}
+.hpfill {
+  height: 100%;
+  background: var(--green);
+  transition: width 0.5s ease-out, background-color 0.5s;
+}
+.hpfill.mid { background: var(--orange); }
+.hpfill.low { background: var(--red); }
+
+.meta { display: flex; gap: 12px; font-family: var(--mono); font-size: 13px; }
+.kills { color: var(--gold); }
+.restarts { color: var(--orange); }
+.node { margin-top: 6px; font-family: var(--mono); font-size: 10px; color: var(--muted); }
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.card.dead { filter: grayscale(1); opacity: 0.45; }
+.card.dead .overlay { display: flex; font-size: 54px; }
+.card.dead .overlay::after { content: "💀"; }
+
+.card.spectator { opacity: 0.5; border-style: dashed; }
+.card.spectator .overlay { display: flex; align-items: flex-start; justify-content: flex-end; padding: 8px; }
+.card.spectator .overlay::after {
+  content: "en attente";
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.card.winner { border-color: var(--gold); box-shadow: 0 0 24px rgba(232, 182, 76, 0.35); }
+
+.card.shake { animation: shake 0.35s; }
+@keyframes shake {
+  20% { transform: translateX(-4px) rotate(-1deg); }
+  40% { transform: translateX(4px) rotate(1deg); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+
+/* --- Colonne de droite -------------------------------------------------- */
+.side { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 14px 16px;
+}
+.panel h2 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.events {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 52vh;
+  overflow-y: auto;
+  font-size: 13px;
+}
+.events li { padding: 5px 0; border-bottom: 1px solid #2a211a; }
+.events li:first-child { animation: flash 0.8s; }
+.ev-kill { color: #f08a80; }
+.ev-crit { color: var(--orange); }
+.ev-round, .ev-victory { color: var(--gold); font-weight: 700; }
+.ev-sigterm, .ev-liveness, .ev-restart { color: #9fc3ff; }
+.ev-ghost, .ev-self, .ev-join { color: var(--muted); }
+
+@keyframes flash { from { background: rgba(232, 182, 76, 0.25); } }
+
+.hof { margin: 0; padding-left: 22px; font-size: 14px; }
+.hof li { padding: 4px 0; }
+.hof li span { display: inline-block; max-width: 230px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
+.hof li b { float: right; color: var(--gold); font-family: var(--mono); }
+
+/* --- Écran de victoire -------------------------------------------------- */
+.victory {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 6, 3, 0.82);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s;
+}
+.victory.show { opacity: 1; pointer-events: auto; }
+.victory-inner { text-align: center; padding: 16px; }
+.trophy { font-size: 96px; animation: bounce 1.2s ease-in-out infinite; }
+.victory-name {
+  margin-top: 12px;
+  font-size: clamp(28px, 6vw, 64px);
+  font-weight: 800;
+  color: var(--gold);
+  text-shadow: 0 0 30px rgba(232, 182, 76, 0.5);
+}
+.victory-sub { margin-top: 8px; color: var(--muted); font-family: var(--mono); }
+
+@keyframes bounce { 50% { transform: translateY(-12px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

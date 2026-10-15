@@ -1,0 +1,9 @@
+# Notion : Namespace. Tout le projet vit dans un espace de noms isolé :
+# les noms (Services, Secrets…) ne débordent pas sur le reste du cluster, et
+# `kubectl delete namespace pod-royale` nettoie tout d'un coup.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: pod-royale
+  labels:
+    app.kubernetes.io/part-of: pod-royale

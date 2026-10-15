@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pod Royale</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="top">
+    <h1>POD <span>ROYALE</span></h1>
+    <div class="status">
+      <span class="round">ROUND <b id="round">{{ s.round }}</b></span>
+      <span id="badge" class="badge badge-{{ s.state }}">{{ s.state | upper }}</span>
+      <span class="count"><b id="alive">{{ s.alive }}</b> / <span id="present">{{ s.present }}</span> en vie</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section id="grid" class="grid" aria-label="Combattants">
+      {% for f in s.fighters %}
+      <article class="card {{ f.status }}" data-pod="{{ f.pod }}">
+        <div class="card-head">
+          <span class="emoji" title="{{ f.label }}">{{ f.emoji }}</span>
+          <div class="who">
+            <div class="name">{{ f.name }}</div>
+            <div class="pod">{{ f.pod }}</div>
+          </div>
+        </div>
+        <div class="hpbar"><div class="hpfill" style="width: {{ (100 * f.hp / f.max_hp) | round(0) }}%"></div></div>
+        <div class="meta">
+          <span class="hp">{{ f.hp }} / {{ f.max_hp }} PV</span>
+          <span class="kills">☠️ × {{ f.kills }}</span>
+          {% if f.restarts %}<span class="restarts">↻ {{ f.restarts }}</span>{% endif %}
+        </div>
+        <div class="node">node: {{ f.node }}</div>
+        <div class="overlay"></div>
+      </article>
+      {% else %}
+      <p class="empty">Aucun guerrier dans l'arène… <code>kubectl scale deploy/guerrier --replicas=6</code></p>
+      {% endfor %}
+    </section>
+
+    <aside class="side">
+      <section class="panel">
+        <h2>Fil des combats</h2>
+        <ol id="events" class="events">
+          {% for e in s.events %}<li class="ev-{{ e.type }}">{{ e.text }}</li>{% endfor %}
+        </ol>
+      </section>
+      <section class="panel">
+        <h2>Tableau d'honneur</h2>
+        <ol id="hof" class="hof">
+          {% for h in s.halloffame %}<li><span>{{ h.name }}</span><b>{{ h.wins }} 🏆</b></li>{% endfor %}
+        </ol>
+      </section>
+    </aside>
+  </main>
+
+  <div id="victory" class="victory{% if s.state == 'victory' %} show{% endif %}" aria-live="polite">
+    <div class="victory-inner">
+      <div class="trophy">🏆</div>
+      <div id="victory-name" class="victory-name">{% if s.winner %}{{ s.winner.emoji }} {{ s.winner.name }}{% else %}Double KO{% endif %}</div>
+      <div id="victory-sub" class="victory-sub">{% if s.winner %}remporte le round {{ s.round }} avec {{ s.winner.kills }} élimination(s){% else %}personne ne gagne{% endif %}</div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='arena.js') }}"></script>
+</body>
+</html>

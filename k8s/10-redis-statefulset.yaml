@@ -1,0 +1,65 @@
+# Notion : StatefulSet + PersistentVolumeClaim. Redis a une identité stable (redis-0)
+# et son propre volume créé par volumeClaimTemplates : si le pod est supprimé, il est
+# recréé avec le même nom et rattaché au même PVC, donc le tableau d'honneur survit.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+  namespace: pod-royale
+  labels:
+    app: redis
+    app.kubernetes.io/part-of: pod-royale
+spec:
+  serviceName: redis
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+        app.kubernetes.io/part-of: pod-royale
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          # $(REDIS_PASSWORD) est substitué par Kubernetes à partir de la variable d'env ci-dessous
+          command: ["redis-server", "--appendonly", "yes", "--requirepass", "$(REDIS_PASSWORD)"]
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-auth
+                  key: REDIS_PASSWORD
+          ports:
+            - name: redis
+              containerPort: 6379
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+  # Un PVC "data-redis-0" est créé automatiquement pour le pod redis-0
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 256Mi
