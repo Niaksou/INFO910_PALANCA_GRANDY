@@ -11,18 +11,22 @@ kubectl -n pod-royale rollout status statefulset/redis --timeout=180s
 kubectl -n pod-royale rollout status deployment/guerrier --timeout=180s
 kubectl -n pod-royale rollout status deployment/arena --timeout=180s
 
-cat <<MSG
+echo
+echo "✅ Pod Royale est déployé ! URL : http://pod-royale.local"
+echo
 
-✅ Pod Royale est déployé !
+CONTEXT="$(kubectl config current-context 2>/dev/null || true)"
+if [[ "$CONTEXT" == minikube* ]] && command -v minikube >/dev/null; then
+  DRIVER="$(minikube profile list -o json 2>/dev/null | grep -o '"Driver":"[^"]*"' | head -1 | cut -d'"' -f4)"
+  echo "  1. Contrôleur Ingress :  minikube addons enable ingress"
+  if [[ "$(uname)" == Darwin && "$DRIVER" == docker ]]; then
+    # Driver docker sur macOS : l'IP de minikube n'est pas joignable depuis le Mac
+    echo "  2. Dans un autre terminal, à laisser ouvert :  minikube tunnel"
+    echo "  3. Une seule fois :  echo \"127.0.0.1 pod-royale.local\" | sudo tee -a /etc/hosts"
+  else
+    echo "  2. Une seule fois :  echo \"$(minikube ip) pod-royale.local\" | sudo tee -a /etc/hosts"
+  fi
+fi
 
-  URL : http://pod-royale.local
-
-  Avec minikube :
-    minikube addons enable ingress
-    echo "\$(minikube ip) pod-royale.local" | sudo tee -a /etc/hosts
-    (avec le driver docker sur macOS : lancer « minikube tunnel » et utiliser 127.0.0.1)
-
-  Sans Ingress :
-    kubectl -n pod-royale port-forward svc/arena 8080:80
-    puis http://localhost:8080
-MSG
+echo
+echo "  Sans Ingress :  kubectl -n pod-royale port-forward svc/arena 8080:80  →  http://localhost:8080"

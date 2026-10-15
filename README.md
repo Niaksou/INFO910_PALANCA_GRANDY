@@ -97,8 +97,11 @@ minikube addons enable ingress
 ./scripts/deploy.sh
 
 # 4. Résoudre pod-royale.local vers le cluster
+#    Linux, ou minikube avec un driver VM :
 echo "$(minikube ip) pod-royale.local" | sudo tee -a /etc/hosts
-#    (driver docker sur macOS : lancer `minikube tunnel` et mettre 127.0.0.1 à la place)
+#    macOS avec le driver docker : l'IP de minikube n'est pas joignable depuis le Mac.
+#    Lancer `minikube tunnel` dans un autre terminal (à laisser ouvert), puis :
+echo "127.0.0.1 pod-royale.local" | sudo tee -a /etc/hosts
 
 # 5. Ouvrir http://pod-royale.local
 ```
