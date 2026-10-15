@@ -6,7 +6,7 @@ Les morts échouent leur readinessProbe et sortent des endpoints. Le dernier sur
 
 Projet INFO910 — Palanca & Grandy.
 
-```
+```text
 POD ROYALE                               ROUND 7  [FIGHTING]  3 / 6 en vie
 ┌──────────────────────────┐ ┌──────────────────────────┐   ┌─ FIL DES COMBATS ──────────────────────┐
 │ 🪓 Gérard le Fourbe       │ │ 🏹 Josiane la Sans-Pitié  │   │ ☠️ Josiane a OOMKillé Kevin l'Inoxydable│
@@ -24,7 +24,7 @@ POD ROYALE                               ROUND 7  [FIGHTING]  3 / 6 en vie
 
 ## Architecture
 
-```
+```text
                  Navigateur
                      │  http://pod-royale.local
                      ▼
@@ -90,7 +90,7 @@ Prérequis : Docker, `kubectl`, `minikube` (ou `kind`).
 minikube start
 minikube addons enable ingress
 
-# 2. Construire les images directement dans minikube
+# 2. Construire les images et les charger dans minikube (minikube image load)
 ./scripts/build.sh
 
 # 3. Déployer et attendre que tout soit prêt
@@ -143,7 +143,7 @@ Les guerriers et Redis ne sont **pas exposés** hors du cluster (Services Cluste
 
 ## Structure
 
-```
+```text
 ├── guerrier/        app.py, names.py, Dockerfile
 ├── arena/           app.py, templates/, static/, Dockerfile
 ├── k8s/             manifests numérotés dans l'ordre d'application (+ bonus/ Gateway API)
