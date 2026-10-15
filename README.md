@@ -132,6 +132,8 @@ Pour tout supprimer : `./scripts/reset.sh` (le PVC, et donc le tableau d'honneur
 | 7 | Patch de la ConfigMap `ATTACK_INTERVAL_MS=400` + `kubectl rollout restart deploy/guerrier` | Mode frénésie : les rounds durent quelques secondes |
 | 8 | `kubectl scale deploy/guerrier --replicas=2` | Le duel final |
 
+**Dans l'arène**, chaque coup réellement échangé entre deux pods est rejoué par de petits gladiateurs : flèches pour les archers, boules de feu pour les mages, entailles à l'épée, à la hache ou à la dague, et le sysadmin qui frappe au clavier. Un **coup critique** se voit de loin : aura dorée pendant la charge, ralenti, flash et texte « CRITIQUE ! ». La **barre d'espace** met la scène en pause pour expliquer ce qui se passe.
+
 Pour voir le hasard du load balancing : `kubectl -n pod-royale logs -l app=guerrier --prefix | grep '→'`. Chaque ligne indique quel pod a frappé quel pod.
 
 ---
