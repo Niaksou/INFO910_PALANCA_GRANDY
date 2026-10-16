@@ -6,6 +6,18 @@ cd "$(dirname "$0")/.."
 # kubectl apply -f k8s/ ne descend pas dans les sous-dossiers : k8s/bonus/ est ignoré
 kubectl apply -f k8s/
 
+# Les images gardent le tag 1.0 : sans changement dans le Deployment, un rebuild ne relance
+# aucun pod et l'ancien code continue de tourner. On inscrit une empreinte du code source dans
+# le template : si le code change, Kubernetes fait un rollout ; sinon rien ne bouge.
+# (Pas l'ID de l'image : buildx en génère un nouveau à chaque build, même sans changement.)
+sha() { if command -v sha1sum >/dev/null; then sha1sum; else shasum; fi; }
+for app in guerrier arena; do
+  files="$(find "$app" -type f ! -path '*/__pycache__/*' | LC_ALL=C sort)"
+  hash="$( { echo "$files"; cat $files; } | sha | cut -c1-12)"
+  kubectl -n pod-royale patch deployment "$app" --type merge \
+    -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"pod-royale/code\":\"$hash\"}}}}}" >/dev/null
+done
+
 echo "⏳ Attente des déploiements…"
 kubectl -n pod-royale rollout status statefulset/redis --timeout=180s
 kubectl -n pod-royale rollout status deployment/guerrier --timeout=180s

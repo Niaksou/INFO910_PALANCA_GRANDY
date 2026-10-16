@@ -5,7 +5,8 @@
 
   const canvas = document.getElementById("scene");
   if (!canvas) return;
-  const ctx = canvas.getContext("2d");
+  // `let` : portrait() prête temporairement les fonctions de dessin à un autre canvas
+  let ctx = canvas.getContext("2d");
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   // --- Apparence des classes ------------------------------------------------
@@ -21,8 +22,30 @@
   const OUTLINE = "#1a120c";
   const styleOf = (f) => STYLES[f.class] || STYLES.barbare;
 
+  // Variantes « mort » (gris) et « touché » (éclairci) calculées une fois par classe.
+  // ctx.filter ferait la même chose, mais il force un rendu hors écran à chaque dessin : très cher.
+  function tint(hex, mode) {
+    const n = parseInt(hex.slice(1), 16);
+    let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+    if (mode === "dead") {
+      r = g = b = Math.round((0.3 * r + 0.59 * g + 0.11 * b) * 0.75);
+    } else {
+      r += (255 - r) * 0.7; g += (255 - g) * 0.7; b += (255 - b) * 0.7;
+    }
+    return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+  }
+  const variants = new Map();
+  function variant(st, mode) {
+    const key = st.body + mode;
+    if (!variants.has(key)) {
+      variants.set(key, { ...st, body: tint(st.body, mode), trim: tint(st.trim, mode), skin: tint(st.skin, mode) });
+    }
+    return variants.get(key);
+  }
+
   // --- État de la scène -----------------------------------------------------
   let W = 0, H = 0, dpr = 1, S = 1, bg = null;
+  const torchGlows = new Map();
   const actors = new Map();
   const projectiles = [], particles = [], texts = [], bolts = [];
   let state = null, seenHits = null, lastRound = null;
@@ -132,9 +155,16 @@
     ctx.fillStyle = "#2a1d12"; ctx.fillRect(x - 3, y - 6, 6, 40);
     ctx.fillStyle = "#4a3320"; ctx.fillRect(x - 8, y - 10, 16, 6);
     const f = 1 + Math.sin(time * 17 + x) * 0.08 + Math.sin(time * 29 + x) * 0.06;
-    const glow = ctx.createRadialGradient(x, y - 18, 2, x, y - 18, 70);
-    glow.addColorStop(0, "rgba(255,170,60,0.28)"); glow.addColorStop(1, "rgba(255,120,40,0)");
+    // Le dégradé du halo est créé une fois par position (la torche ne bouge pas), seule l'opacité vacille
+    let glow = torchGlows.get(x);
+    if (!glow) {
+      glow = ctx.createRadialGradient(x, y - 18, 2, x, y - 18, 70);
+      glow.addColorStop(0, "rgba(255,170,60,0.28)"); glow.addColorStop(1, "rgba(255,120,40,0)");
+      torchGlows.set(x, glow);
+    }
+    ctx.globalAlpha = 0.85 + (f - 1) * 1.5;
     ctx.fillStyle = glow; ctx.fillRect(x - 70, y - 90, 140, 140);
+    ctx.globalAlpha = 1;
     ctx.fillStyle = "#ff7a1a";
     ctx.beginPath(); ctx.ellipse(x, y - 20 * f, 8, 15 * f, 0, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "#ffd25a";
@@ -164,13 +194,14 @@
         break;
       case "staff": {
         ctx.fillStyle = "#6b4423"; ctx.fillRect(-1.5, -8, 3, 41);
+        // Halo en disque translucide plutôt qu'en shadowBlur (un flou par mage et par frame)
         const pulse = 5 + Math.sin(time * 6) * 0.8;
-        ctx.save();
-        ctx.shadowColor = "#ff9a3c"; ctx.shadowBlur = 12;
-        const g = ctx.createRadialGradient(0, 36, 1, 0, 36, pulse);
-        g.addColorStop(0, "#fff1b8"); g.addColorStop(0.5, "#ffb347"); g.addColorStop(1, "#e2531c");
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 36, pulse, 0, Math.PI * 2); ctx.fill();
-        ctx.restore();
+        ctx.fillStyle = "rgba(255,154,60,0.3)";
+        ctx.beginPath(); ctx.arc(0, 36, pulse * 1.9, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#ffb347";
+        ctx.beginPath(); ctx.arc(0, 36, pulse, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#fff1b8";
+        ctx.beginPath(); ctx.arc(0, 36, pulse * 0.45, 0, Math.PI * 2); ctx.fill();
         break;
       }
       case "bow": {
@@ -318,10 +349,21 @@
     shape("#ffd24a", OUTLINE, 1.2);
   }
 
+  // measureText en boucle à chaque frame coûte cher : on mémorise le texte tronqué
+  const fitCache = new Map();
   function fitText(text, maxW) {
-    if (ctx.measureText(text).width <= maxW) return text;
-    while (text.length > 1 && ctx.measureText(text + "…").width > maxW) text = text.slice(0, -1);
-    return text + "…";
+    const key = ctx.font + "|" + maxW + "|" + text;
+    let out = fitCache.get(key);
+    if (out === undefined) {
+      out = text;
+      if (ctx.measureText(out).width > maxW) {
+        while (out.length > 1 && ctx.measureText(out + "…").width > maxW) out = out.slice(0, -1);
+        out += "…";
+      }
+      if (fitCache.size > 500) fitCache.clear();
+      fitCache.set(key, out);
+    }
+    return out;
   }
 
   function drawActor(a) {
@@ -361,16 +403,16 @@
 
     ctx.save();
     ctx.scale(a.facing * s, s);
+    let look = st;
     if (dead) {
       ctx.rotate(-easeOut(Math.min(1, a.deadT)) * Math.PI / 2);
-      ctx.filter = "grayscale(1) brightness(0.75)";
+      look = variant(st, "dead");
     } else if (a.flash > 0.45) {
-      ctx.filter = "brightness(2.4) saturate(0.4)";
+      look = variant(st, "flash");
     }
     ctx.rotate(tilt);
     ctx.translate(0, -lift);
-    drawBody(a, st, arm, walk);
-    ctx.filter = "none";
+    drawBody(a, look, arm, walk);
     ctx.restore();
 
     // Étiquettes (non retournées)
@@ -937,25 +979,33 @@
     }
   }
 
-  let last = performance.now();
+  // Machine lente : si une frame coûte plus de 8 ms en moyenne, on passe à 30 fps
+  // (une frame sur deux). On remonte à 60 fps quand ça redevient fluide.
+  let last = performance.now(), cost = 0, skip = false, odd = false;
   function frame(now) {
+    requestAnimationFrame(frame);
+    odd = !odd;
+    if (paused || (skip && odd)) return;
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
-    if (!paused) {
-      whiteFlash = Math.max(0, whiteFlash - dt * 4);
-      // Ralenti bref après un coup critique
-      if (slowmo > 0) slowmo -= dt;
-      step(slowmo > 0 ? dt * 0.3 : dt);
-      draw();
-    }
-    requestAnimationFrame(frame);
+    const t0 = performance.now();
+    whiteFlash = Math.max(0, whiteFlash - dt * 4);
+    // Ralenti bref après un coup critique
+    if (slowmo > 0) slowmo -= dt;
+    step(slowmo > 0 ? dt * 0.3 : dt);
+    draw();
+    cost += (performance.now() - t0 - cost) * 0.05;
+    if (!skip && cost > 8) skip = true;
+    else if (skip && cost < 4) skip = false;
   }
 
   function resize() {
     const w = canvas.parentElement.clientWidth;
     if (!w) return;
     const h = Math.round(clamp(w * 0.56, 340, 560));
-    dpr = window.devicePixelRatio || 1;
+    // Plafonné à 1,5 : sur un écran Retina (dpr 2) on dessine 44 % de pixels en moins, sans différence visible
+    dpr = Math.min(1.5, window.devicePixelRatio || 1);
+    torchGlows.clear();
     W = w; H = h;
     S = clamp(h / 480, 0.75, 1.15);
     canvas.width = Math.round(w * dpr);
@@ -992,5 +1042,23 @@
     setPaused(!paused);
   });
 
-  window.ArenaScene = { update, actors, setPaused };
+  // Portrait d'un guerrier pour les loges : même dessin que dans l'arène, en buste et immobile.
+  // Appelé seulement quand la classe ou le statut change, pas à chaque frame.
+  function portrait(cv, f) {
+    const w = cv.clientWidth || 72, h = cv.clientHeight || 80;
+    const r = Math.min(2, window.devicePixelRatio || 1);
+    if (cv.width !== Math.round(w * r)) { cv.width = Math.round(w * r); cv.height = Math.round(h * r); }
+    const main = ctx;
+    ctx = cv.getContext("2d");
+    ctx.setTransform(r, 0, 0, r, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    const st = styleOf(f), dead = f.status === "dead";
+    const k = h / 74;
+    ctx.translate(w / 2 - 2 * k, h + 6 * k);
+    ctx.scale(k, k);
+    drawBody({ deadT: dead ? 1 : null, phase: 1, pull: 0 }, dead ? variant(st, "dead") : st, st.idle, 0);
+    ctx = main;
+  }
+
+  window.ArenaScene = { update, actors, setPaused, portrait };
 })();

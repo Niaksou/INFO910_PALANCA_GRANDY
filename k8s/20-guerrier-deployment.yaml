@@ -57,12 +57,21 @@ spec:
             - name: config
               mountPath: /config
               readOnly: true
-          # Mort => /ready renvoie 503 => le pod sort des endpoints en ~1 s
+          # Démarrage lent (nœud chargé, CPU limité) : la livenessProbe n'entre en jeu qu'une fois
+          # /healthz OK, sinon un conteneur trop lent à démarrer serait tué en boucle (CrashLoopBackOff).
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            periodSeconds: 2
+            failureThreshold: 30
+          # Mort => /ready renvoie 503 => le pod sort des endpoints en ~2 s.
+          # (1 s faisait 6 probes/s pour le kubelet, pour un gain invisible à l'écran)
           readinessProbe:
             httpGet:
               path: /ready
               port: 8080
-            periodSeconds: 1
+            periodSeconds: 2
             timeoutSeconds: 2
             failureThreshold: 1
           # Boucle d'attaque figée => /healthz renvoie 500 => redémarrage du conteneur
@@ -70,7 +79,6 @@ spec:
             httpGet:
               path: /healthz
               port: 8080
-            initialDelaySeconds: 5
             periodSeconds: 3
             # Laisse un peu de marge si le nœud est chargé (par défaut : 1 s)
             timeoutSeconds: 3
@@ -79,8 +87,10 @@ spec:
             requests:
               cpu: 20m
               memory: 48Mi
+            # La limite ne consomme rien : elle autorise juste des pics (démarrage de Python).
+            # À 200m le conteneur était bridé, ses probes expiraient et le kubelet le tuait.
             limits:
-              cpu: 200m
+              cpu: 500m
               memory: 128Mi
       volumes:
         - name: config

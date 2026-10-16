@@ -71,9 +71,10 @@ Chaque attaque ouvre une **nouvelle connexion TCP** (pas de `requests.Session`, 
 | **ConfigMap (env)** | `jeu-config` via `envFrom` : `ATTACK_INTERVAL_MS`, `VICTORY_PAUSE_S`, `REDIS_HOST`… |
 | **ConfigMap (volume)** | La même ConfigMap, montée en `/config/classes.json` : les classes de guerriers. |
 | **Secret** | `k8s/01-secret-redis.yaml` : `REDIS_PASSWORD` injecté par `secretKeyRef`. Aucun mot de passe en clair dans les Deployments. |
-| **readinessProbe** | `GET /ready` renvoie 503 quand le guerrier est mort, donc il sort des endpoints en ~1 s (`periodSeconds: 1`, `failureThreshold: 1`). |
+| **readinessProbe** | `GET /ready` renvoie 503 quand le guerrier est mort, donc il sort des endpoints en ~2 s (`periodSeconds: 2`, `failureThreshold: 1`). |
 | **livenessProbe** | `GET /healthz` renvoie 500 si la boucle d'attaque est figée (`/freeze`), donc le conteneur redémarre (RESTARTS +1). |
-| **requests / limits** | Sur tous les conteneurs (ex. guerrier : `20m/48Mi` → `200m/128Mi`). |
+| **startupProbe** | Laisse jusqu'à 60 s au guerrier pour démarrer avant que la livenessProbe prenne le relais : sur un nœud chargé, un démarrage lent ne finit plus en CrashLoopBackOff. |
+| **requests / limits** | Sur tous les conteneurs (ex. guerrier : `20m/48Mi` → `500m/128Mi`). |
 | **Downward API** | `POD_NAME`, `POD_IP`, `NODE_NAME` injectés depuis `metadata.name`, `status.podIP`, `spec.nodeName`. |
 | **Arrêt propre (SIGTERM)** | `terminationGracePeriodSeconds: 10` : le guerrier annonce « ⚡ foudroyé par les dieux » avant de partir. |
 | **Ingress** | `k8s/40-ingress.yaml` : `pod-royale.local` → `arena:80`. Seule l'arène est exposée. |
@@ -84,6 +85,20 @@ Chaque attaque ouvre une **nouvelle connexion TCP** (pas de `requests.Session`, 
 ## Installation (minikube)
 
 Prérequis : Docker, `kubectl`, `minikube` (ou `kind`).
+
+### En une commande
+
+```bash
+./scripts/up.sh                                               # macOS, Linux, WSL, Git Bash
+```
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\up.ps1        # Windows (PowerShell)
+```
+
+Le script démarre Docker Desktop s'il le faut (macOS et Windows), puis minikube si aucun cluster ne répond. Il construit et charge les images, déploie et attend que tout soit prêt. Il ouvre ensuite l'arène sur **http://localhost:8080** par un port-forward : pas de `sudo`, pas de `minikube tunnel`, pas de fichier hosts à modifier, quel que soit l'OS. Options : `PORT=9090`, `NO_BROWSER=1` et `INGRESS=1` (active l'addon ingress pour `pod-royale.local`) pour `up.sh`, `-Port 9090`, `-NoBrowser` et `-Ingress` pour `up.ps1`. Ctrl+C coupe l'accès, et le jeu continue de tourner dans le cluster.
+
+### Étape par étape
 
 ```bash
 # 1. Cluster + contrôleur Ingress
@@ -140,7 +155,7 @@ Pour voir le hasard du load balancing : `kubectl -n pod-royale logs -l app=guerr
 
 ## Pourquoi pas de CORS ici
 
-Le navigateur ne parle **qu'à une seule origine** : `http://pod-royale.local`, c'est-à-dire l'arène derrière l'Ingress. La page est rendue côté serveur par Jinja2, et `arena.js` appelle `fetch('/api/state')` avec une URL relative, donc sur la même origine. Il n'y a jamais de requête cross-origin, et aucun en-tête CORS n'est nécessaire.
+Le navigateur ne parle **qu'à une seule origine** : `http://pod-royale.local`, c'est-à-dire l'arène derrière l'Ingress. La page est rendue côté serveur par Jinja2, et `arena.js` appelle `fetch('/api/state')` avec une URL relative, donc sur la même origine. Il n'y a jamais de requête cross-origin, et aucun en-tête CORS n'est nécessaire. Les polices (Marcellus et Alegreya Sans, licence SIL OFL) sont servies par l'arène depuis `static/fonts/` : même les polices ne viennent pas d'une autre origine, et la démo fonctionne sans Internet.
 
 Les guerriers et Redis ne sont **pas exposés** hors du cluster (Services ClusterIP, pas d'Ingress). L'arène lit l'état dans Redis côté serveur, puis le renvoie au navigateur. C'est plus simple et plus sûr : la surface exposée se limite à une seule application.
 
@@ -152,5 +167,5 @@ Les guerriers et Redis ne sont **pas exposés** hors du cluster (Services Cluste
 ├── guerrier/        app.py, names.py, Dockerfile
 ├── arena/           app.py, templates/, static/, Dockerfile
 ├── k8s/             manifests numérotés dans l'ordre d'application (+ bonus/ Gateway API)
-└── scripts/         build.sh, deploy.sh, demo.sh, reset.sh
+└── scripts/         up.sh / up.ps1 (tout en un), build.sh, deploy.sh, demo.sh, reset.sh
 ```

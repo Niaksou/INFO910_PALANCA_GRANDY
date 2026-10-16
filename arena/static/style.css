@@ -1,260 +1,367 @@
+/* Pod Royale — le Colisée.
+   La page est taillée dans la même pierre que l'arène : travertin dans l'ombre, bronze pour la
+   gloire, pourpre impériale pour la mort. Un seul élément fort : les loges sous la scène. */
+
+@font-face { font-family: "Marcellus"; src: url("fonts/marcellus-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Alegreya Sans"; src: url("fonts/alegreya-sans-400.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Alegreya Sans"; src: url("fonts/alegreya-sans-400-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Alegreya Sans"; src: url("fonts/alegreya-sans-500.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+@font-face { font-family: "Alegreya Sans"; src: url("fonts/alegreya-sans-700.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+
 :root {
-  --bg: #0d0b0a;
-  --panel: #17130f;
-  --panel-2: #201a14;
-  --line: #3a2c1e;
-  --text: #eadfcf;
-  --muted: #8f8170;
-  --gold: #e8b64c;
-  --red: #d63a2f;
-  --green: #4fbf5a;
-  --orange: #e8913a;
-  --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --stone-deep: #221c18;
+  --stone: #2b241f;
+  --stone-raised: #352c25;
+  --niche: #1a1411;
+  --travertine: #8a7a66;
+  --travertine-dark: #4a3f35;
+  --parchment: #efe2c8;
+  --parchment-muted: #b9a88d;
+  --bronze: #c9963f;
+  --bronze-bright: #e6b862;
+  --purple: #8e2335;
+  --purple-light: #e0788a;
+  --ice: #9fc3ff;
+  --hp-high: #7da862;
+  --hp-mid: #d68f3c;
+  --hp-low: #c4404f;
+
+  --display: "Marcellus", "Trajan Pro", Georgia, serif;
+  --text: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
 * { box-sizing: border-box; }
 
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: 100dvh;
+  color: var(--parchment);
+  font-family: var(--text);
+  font-size: 16px;
+  line-height: 1.5;
+  /* grain de pierre, peint une seule fois */
   background:
-    radial-gradient(ellipse at 50% -10%, rgba(214, 58, 47, 0.18), transparent 60%),
-    var(--bg);
-  color: var(--text);
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .6 0 0 0 0 .52 0 0 0 0 .42 0 0 0 .08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse 80% 50% at 50% 0%, #3a2f27, transparent 70%),
+    var(--stone-deep);
 }
 
-/* --- En-tête ------------------------------------------------------------ */
-.top {
+:focus-visible { outline: 2px solid var(--bronze-bright); outline-offset: 3px; }
+
+/* --- La frise ------------------------------------------------------------- */
+.frieze {
+  padding: 22px 16px 18px;
+  text-align: center;
+  background: linear-gradient(180deg, #3d332b, var(--stone));
+  border-bottom: 1px solid var(--travertine-dark);
+  box-shadow: 0 1px 0 rgba(255, 236, 205, 0.06), 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+/* Capitales gravées : ombre sombre au-dessus, reflet clair en dessous */
+.frieze-title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(32px, 5vw, 56px);
+  line-height: 1.05;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #d4c2a2;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.65), 0 1px 0 rgba(255, 238, 210, 0.2);
+}
+
+.frieze-status {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--line);
-  background: linear-gradient(180deg, #1a120c, transparent);
-}
-
-.top h1 {
-  margin: 0;
-  font-family: var(--mono);
-  font-size: 28px;
-  letter-spacing: 0.18em;
-  color: var(--text);
-}
-.top h1 span { color: var(--red); }
-
-.status { display: flex; align-items: center; gap: 16px; font-family: var(--mono); }
-.round b, .count b { color: var(--gold); }
-
-.badge {
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  border: 1px solid currentColor;
-}
-.badge-waiting { color: var(--muted); }
-.badge-fighting { color: var(--red); animation: pulse 1s ease-in-out infinite; }
-.badge-victory { color: var(--gold); }
-
-@keyframes pulse { 50% { background: rgba(214, 58, 47, 0.2); } }
-
-/* --- Mise en page ------------------------------------------------------- */
-.layout {
-  display: grid;
-  grid-template-columns: 1fr 360px;
-  gap: 24px;
-  padding: 24px;
-}
-@media (max-width: 900px) {
-  .layout { grid-template-columns: 1fr; padding: 16px; }
-}
-
-/* --- Scène ------------------------------------------------------------- */
-.main-col { min-width: 0; }
-.scene-wrap {
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  overflow: hidden;
-  background: #0d0b0a;
-  box-shadow: 0 0 0 1px rgba(232, 182, 76, 0.08), 0 20px 50px rgba(0, 0, 0, 0.5);
-}
-#scene { display: block; width: 100%; }
-
-.roster-title {
-  margin: 22px 0 10px;
-  font-size: 13px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--gold);
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 14px;
-  align-content: start;
-}
-
-.empty { color: var(--muted); }
-.empty code { font-family: var(--mono); color: var(--gold); }
-
-/* --- Cartes ------------------------------------------------------------- */
-.card {
-  position: relative;
-  padding: 14px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-  transition: opacity 0.4s, filter 0.4s, border-color 0.3s;
-}
-.card.alive { border-color: #5a3b22; }
-
-.card-head { display: flex; gap: 10px; align-items: center; }
-.emoji { font-size: 30px; line-height: 1; }
-.who { min-width: 0; }
-.name {
-  font-size: 16px;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.pod {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.hpbar {
-  height: 10px;
-  margin: 12px 0 8px;
-  border-radius: 5px;
-  background: #2a211a;
-  overflow: hidden;
-}
-.hpfill {
-  height: 100%;
-  background: var(--green);
-  transition: width 0.5s ease-out, background-color 0.5s;
-}
-.hpfill.mid { background: var(--orange); }
-.hpfill.low { background: var(--red); }
-
-.meta { display: flex; gap: 12px; font-family: var(--mono); font-size: 13px; }
-.kills { color: var(--gold); }
-.restarts { color: var(--orange); }
-.node { margin-top: 6px; font-family: var(--mono); font-size: 10px; color: var(--muted); }
-
-.overlay {
-  position: absolute;
-  inset: 0;
-  display: none;
-  align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  font-size: 15px;
-  font-weight: 700;
-  pointer-events: none;
+  align-items: center;
+  gap: 8px 28px;
+  margin: 10px 0 0;
+  font-size: 17px;
+  color: var(--parchment-muted);
+}
+.frieze-status b { color: var(--parchment); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+.phase {
+  padding: 2px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--travertine-dark);
+  color: var(--parchment-muted);
+  font-weight: 500;
+}
+.phase-fighting { background: var(--purple); border-color: #b23a4e; color: #fbe9ec; }
+.phase-victory { background: #5a4220; border-color: var(--bronze); color: var(--bronze-bright); }
+
+/* --- Le Colisée : scène, loges, gradins ------------------------------------- */
+.colosseum {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-areas: "pit stands" "loges stands";
+  /* la colonne des gradins couvre deux rangées : la première reste à la taille de l'arène */
+  grid-template-rows: auto 1fr;
+  align-items: start;
+  gap: 28px;
+  max-width: 1640px;
+  margin: 0 auto;
+  padding: 28px clamp(16px, 3vw, 40px) 56px;
+}
+@media (max-width: 1000px) {
+  .colosseum { grid-template-columns: minmax(0, 1fr); grid-template-areas: "pit" "loges" "stands"; }
 }
 
-.card.dead { filter: grayscale(1); opacity: 0.45; }
-.card.dead .overlay { display: flex; font-size: 54px; }
-.card.dead .overlay::after { content: "💀"; }
-
-.card.spectator { opacity: 0.5; border-style: dashed; }
-.card.spectator .overlay { display: flex; align-items: flex-start; justify-content: flex-end; padding: 8px; }
-.card.spectator .overlay::after {
-  content: "en attente";
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--muted);
+.carved {
+  margin: 0 0 14px;
+  padding-bottom: 8px;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  color: var(--parchment);
+  border-bottom: 1px solid var(--travertine-dark);
 }
 
-.card.winner { border-color: var(--gold); box-shadow: 0 0 24px rgba(232, 182, 76, 0.35); }
-
-.card.shake { animation: shake 0.35s; }
-@keyframes shake {
-  20% { transform: translateX(-4px) rotate(-1deg); }
-  40% { transform: translateX(4px) rotate(1deg); }
-  60% { transform: translateX(-3px); }
-  80% { transform: translateX(2px); }
+/* La fosse : l'arène encastrée dans un muret de pierre */
+.pit {
+  grid-area: pit;
+  padding: 10px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #4a3f35, #2e2620);
+  border-top: 1px solid rgba(138, 122, 102, 0.7);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35), 0 24px 60px rgba(0, 0, 0, 0.45);
 }
+#scene { display: block; width: 100%; border-radius: 8px; background: var(--niche); }
 
-/* --- Colonne de droite -------------------------------------------------- */
-.side { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
-.panel {
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: var(--panel);
-  padding: 14px 16px;
-}
-.panel h2 {
-  margin: 0 0 10px;
-  font-size: 13px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--gold);
-}
+/* --- Les loges -------------------------------------------------------------- */
+.loges-wrap { grid-area: loges; }
 
-.events {
-  list-style: none;
+.loges {
+  display: grid;
+  /* arcade centrée sous l'arène, comme les arches d'un amphithéâtre */
+  grid-template-columns: repeat(auto-fill, 164px);
+  justify-content: center;
+  gap: 14px;
   margin: 0;
   padding: 0;
-  max-height: 52vh;
-  overflow-y: auto;
-  font-size: 13px;
+  list-style: none;
 }
-.events li { padding: 5px 0; border-bottom: 1px solid #2a211a; }
-.events li:first-child { animation: flash 0.8s; }
-.ev-kill { color: #f08a80; }
-.ev-crit { color: var(--orange); }
-.ev-round, .ev-victory { color: var(--gold); font-weight: 700; }
-.ev-sigterm, .ev-liveness, .ev-restart { color: #9fc3ff; }
-.ev-ghost, .ev-self, .ev-join { color: var(--muted); }
 
-@keyframes flash { from { background: rgba(232, 182, 76, 0.25); } }
+.loge {
+  position: relative;
+  padding: 8px 10px 12px;
+  text-align: center;
+  background: var(--stone-raised);
+  border: 1px solid var(--travertine-dark);
+  border-top-color: rgba(138, 122, 102, 0.55);
+  /* arc en plein cintre */
+  border-radius: 80px 80px 8px 8px / 66px 66px 8px 8px;
+  transition: opacity 0.3s, border-color 0.3s;
+}
 
-.hof { margin: 0; padding-left: 22px; font-size: 14px; }
-.hof li { padding: 4px 0; }
-.hof li span { display: inline-block; max-width: 230px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: bottom; }
-.hof li b { float: right; color: var(--gold); font-family: var(--mono); }
+.loge-niche {
+  position: relative;
+  height: 96px;
+  border-radius: 70px 70px 4px 4px / 58px 58px 4px 4px;
+  /* niche éclairée par en dessous, comme les torches de l'arène */
+  background: radial-gradient(ellipse 70% 80% at 50% 105%, #5b4733, var(--niche) 75%);
+  box-shadow: inset 0 8px 16px rgba(0, 0, 0, 0.6);
+}
+.loge-portrait { display: block; width: 76px; height: 84px; margin: 12px auto 0; }
 
-/* --- Bandeau de victoire (en haut, sur toute la largeur : la scène reste visible) */
+.loge-tag:empty { display: none; }
+.loge-tag {
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  transform: translateX(-50%);
+  padding: 0 8px;
+  border: 1px solid var(--travertine-dark);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--parchment);
+  background: rgba(26, 20, 17, 0.85);
+}
+
+.loge-name {
+  margin-top: 16px;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+.loge-class { font-style: italic; font-size: 14px; color: var(--parchment-muted); }
+
+.loge-hp { margin-top: 8px; }
+.hp-bar {
+  display: block;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--niche);
+  overflow: hidden;
+}
+.hp-fill {
+  display: block;
+  height: 100%;
+  background: var(--hp-high);
+  transform-origin: left;
+  transition: transform 0.4s ease-out, background-color 0.4s;
+}
+.hp-fill[data-level="mid"] { background: var(--hp-mid); }
+.hp-fill[data-level="low"] { background: var(--hp-low); }
+.hp-num { display: block; margin-top: 3px; font-size: 13px; color: var(--parchment-muted); font-variant-numeric: tabular-nums; }
+
+.loge-meta { min-height: 1.4em; font-size: 13px; color: var(--bronze-bright); }
+.loge-pod { font-family: var(--mono); font-size: 12px; color: #8f806b; }
+
+.loge.dead { opacity: 0.6; }
+.loge.dead .loge-tag { background: var(--purple); color: #fbe9ec; }
+.loge.spectator { border-style: dashed; }
+.loge.spectator .loge-portrait { opacity: 0.7; }
+.loge.winner {
+  border-color: var(--bronze);
+  box-shadow: 0 0 0 1px var(--bronze), 0 0 30px rgba(201, 150, 63, 0.28);
+}
+.loge.winner .loge-tag { background: var(--bronze); color: #2a1d0c; }
+
+/* Un coup reçu fait trembler le portrait */
+.loge.hit .loge-portrait { animation: hit 0.32s; }
+@keyframes hit {
+  20% { transform: translateX(-4px); }
+  45% { transform: translateX(4px); }
+  70% { transform: translateX(-2px); }
+}
+
+.empty { color: var(--parchment-muted); }
+.empty code {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 14px;
+  color: var(--bronze-bright);
+  background: var(--niche);
+}
+
+/* --- Les gradins : le crieur et le mur de gloire ------------------------------ */
+.stands { grid-area: stands; display: grid; gap: 28px; }
+
+.crier, .glory {
+  padding: 18px 20px 20px;
+  border-radius: 6px;
+  background: rgba(53, 44, 37, 0.75);
+  border: 1px solid var(--travertine-dark);
+}
+
+/* Le crieur ne garde que les dernières annonces : les plus anciennes s'effacent */
+.events {
+  max-height: 540px;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  -webkit-mask-image: linear-gradient(180deg, #000 78%, transparent);
+  mask-image: linear-gradient(180deg, #000 78%, transparent);
+}
+
+.ev {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 7px 0;
+  border-top: 1px solid rgba(138, 122, 102, 0.14);
+  font-size: 15px;
+  line-height: 1.4;
+}
+.ev:first-child { border-top: 0; animation: arrive 0.6s ease-out; }
+@keyframes arrive { from { background: rgba(201, 150, 63, 0.18); } }
+
+.ev-icon {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.ev.minor { font-size: 14px; color: var(--parchment-muted); padding: 4px 0; }
+.ev.minor .ev-icon { width: 15px; height: 15px; margin: 2px 0 0 2px; }
+
+.ev-kill, .ev-kill .ev-icon { color: var(--purple-light); }
+.ev-victory { color: var(--bronze-bright); font-weight: 700; }
+.ev-round { color: var(--parchment); font-weight: 700; }
+.ev-round .ev-icon, .ev-join .ev-icon { color: #d9b77c; }
+.ev-sigterm .ev-icon, .ev-liveness .ev-icon, .ev-freeze .ev-icon { color: var(--ice); }
+.ev-restart .ev-icon { color: var(--hp-high); }
+.ev-ghost .ev-icon { color: var(--parchment-muted); }
+.ev-crit .ev-icon { color: var(--bronze); }
+
+/* Mur de gloire : podium gravé, puis le reste des noms */
+.hof { margin: 0; padding: 0; list-style: none; }
+.hof li {
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  gap: 10px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-top: 1px solid rgba(138, 122, 102, 0.14);
+}
+.hof li:first-child { border-top: 0; }
+.hof-rank { font-family: var(--display); font-size: 15px; color: var(--parchment-muted); }
+.hof-who { min-width: 0; }
+.hof-name { font-weight: 500; }
+.hof-class { display: block; font-style: italic; font-size: 14px; color: var(--parchment-muted); }
+.hof-wins { font-size: 14px; font-weight: 500; color: var(--bronze); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.hof .podium { padding: 9px 0; }
+.hof .podium .hof-rank { font-size: 24px; line-height: 1; color: var(--bronze-bright); }
+.hof .podium .hof-name { font-size: 17px; font-weight: 700; }
+.hof .podium:first-child .hof-name { color: var(--bronze-bright); }
+
+/* --- La plaque de victoire ---------------------------------------------------- */
 .victory {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 16px;
+  left: 50%;
   z-index: 10;
-  display: flex;
-  justify-content: center;
-  padding: 14px 16px;
-  background: linear-gradient(180deg, rgba(40, 24, 8, 0.97), rgba(40, 24, 8, 0.88));
-  border-bottom: 2px solid var(--gold);
-  box-shadow: 0 10px 40px rgba(232, 182, 76, 0.25);
-  transform: translateY(-110%);
-  transition: transform 0.45s cubic-bezier(.2, .9, .3, 1.2);
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  transform: translate(-50%, -160%);
+  transition: transform 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.15);
   pointer-events: none;
 }
-.victory.show { transform: translateY(0); }
-.victory-inner { display: flex; align-items: center; gap: 16px; text-align: left; }
-.trophy { font-size: 52px; animation: bounce 1.2s ease-in-out infinite; }
-.victory-name {
-  font-size: clamp(22px, 4vw, 40px);
-  font-weight: 800;
-  color: var(--gold);
-  text-shadow: 0 0 24px rgba(232, 182, 76, 0.5);
-}
-.victory-sub { margin-top: 2px; color: #d9c8a8; font-family: var(--mono); font-size: 13px; }
+.victory.show { transform: translate(-50%, 0); }
 
-@keyframes bounce { 50% { transform: translateY(-8px); } }
+.victory-plaque {
+  padding: 14px 32px 16px;
+  text-align: center;
+  border-radius: 6px;
+  background: linear-gradient(180deg, #5c4630, #382a1e);
+  border: 1px solid var(--bronze);
+  box-shadow: inset 0 1px 0 rgba(255, 228, 170, 0.25), 0 16px 40px rgba(0, 0, 0, 0.55);
+}
+.victory-name {
+  font-family: var(--display);
+  font-size: clamp(24px, 4vw, 36px);
+  line-height: 1.15;
+  color: var(--bronze-bright);
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.5);
+}
+.victory-sub { margin-top: 2px; font-size: 16px; color: var(--parchment-muted); }
+
+/* --- Petits écrans -------------------------------------------------------------- */
+@media (max-width: 600px) {
+  .colosseum { gap: 22px; padding-top: 18px; }
+  .pit { padding: 6px; border-radius: 12px; }
+  .loges { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 10px; justify-content: stretch; }
+  .frieze-status { font-size: 15px; gap: 6px 18px; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }

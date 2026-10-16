@@ -303,7 +303,10 @@ def identity():
 def on_sigterm(signum, frame):
     stopping.set()
     try:
-        if frozen.is_set():
+        # Boucle figée (/freeze, ou nœud saturé) : c'est forcément la livenessProbe qui nous tue.
+        # Un kubectl delete, lui, arrive pendant que la boucle tourne normalement.
+        liveness_kill = frozen.is_set() or time.time() - last_tick > HEALTHZ_MAX_AGE_S
+        if liveness_kill:
             # SIGTERM envoyé par le kubelet après l'échec de la livenessProbe :
             # le pod reste, seul le conteneur redémarre. On garde le hash et on
             # prolonge le heartbeat pour que l'arène ne nous oublie pas entre-temps.

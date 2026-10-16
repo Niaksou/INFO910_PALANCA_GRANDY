@@ -6,6 +6,7 @@ et sert l'interface (rendue côté serveur) + /api/state sur la même origine.
 import json
 import logging
 import os
+import re
 import sys
 import threading
 import time
@@ -216,6 +217,11 @@ def game_state():
 
 
 app = Flask(__name__)
+
+# Les messages stockés commencent par un emoji (utile dans les logs). L'interface dessine
+# ses propres marqueurs par type d'événement, donc on retire l'emoji au rendu.
+EMOJI_PREFIX = re.compile(r"^[\U0001F000-\U0001FAFF←-⇿☀-➿‍️\s]+")
+app.jinja_env.filters["sans_emoji"] = lambda text: EMOJI_PREFIX.sub("", text)
 
 
 @app.get("/")

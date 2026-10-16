@@ -1,0 +1,467 @@
+% Compte rendu du projet Pod Royale (INFO910)
+% Compilation : pdflatex rapport.tex (deux passes, pour la table des matières)
+\documentclass[11pt,a4paper]{article}
+
+% ---------------------------------------------------------------- Polices, langue
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{XCharter}
+\usepackage[scaled=0.92]{helvet}
+\usepackage[varqu,scaled=0.9]{inconsolata}
+\newcommand{\titlefont}{\sffamily\bfseries}
+
+% ---------------------------------------------------------------- Mise en page
+\usepackage[a4paper,margin=2.3cm,headheight=14pt]{geometry}
+\usepackage[table]{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,calc,arrows.meta,fit,backgrounds,shapes.geometric,babel}
+\usepackage{fancyvrb}
+\usepackage{array,longtable,booktabs,tabularx}
+\usepackage{fancyhdr}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+
+\definecolor{kube}{HTML}{326CE5}
+\definecolor{nuit}{HTML}{1B2233}
+\definecolor{sang}{HTML}{C0392B}
+\definecolor{or}{HTML}{D4A017}
+\definecolor{gris}{HTML}{6B7280}
+\definecolor{fond}{HTML}{F4F6FA}
+
+\hypersetup{
+  pdftitle={Pod Royale — Compte rendu INFO910},
+  pdfauthor={Palanca \& Grandy},
+}
+
+% Titres de sections en sans-serif coloré
+\makeatletter
+\renewcommand\section{\@startsection{section}{1}{\z@}%
+  {-3.2ex \@plus -1ex \@minus -.2ex}{1.6ex \@plus .2ex}%
+  {\titlefont\Large\color{nuit}}}
+\renewcommand\subsection{\@startsection{subsection}{2}{\z@}%
+  {-2.6ex \@plus -1ex \@minus -.2ex}{1.0ex \@plus .2ex}%
+  {\titlefont\large\color{kube}}}
+\renewcommand\@seccntformat[1]{%
+  {\color{sang}\csname the#1\endcsname}\hspace{0.6em}}
+\makeatother
+
+% En-têtes et pieds de page
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\sffamily\color{gris}Pod Royale}
+\fancyhead[R]{\small\sffamily\color{gris}INFO910 — Compte rendu de projet}
+\fancyfoot[C]{\small\sffamily\color{gris}\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{{\color{gris!40}\hrule height \headrulewidth}}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6em}
+
+% Code
+\newcommand{\code}[1]{\texttt{#1}}
+\DefineVerbatimEnvironment{Code}{Verbatim}{%
+  fontsize=\small, frame=leftline, framerule=2.5pt, rulecolor=\color{kube},
+  xleftmargin=6pt, framesep=8pt, formatcom=\color{nuit}}
+
+% Tableaux
+\renewcommand{\arraystretch}{1.35}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcommand{\entete}[1]{\textcolor{white}{\sffamily\bfseries #1}}
+
+% Encadré
+\newcommand{\encadre}[1]{%
+  \par\noindent
+  \begin{tikzpicture}
+    \node[fill=fond, draw=none, inner sep=10pt, text width=\linewidth-24pt,
+          align=left] (b) {#1};
+    \draw[or, line width=3pt] (b.north west) -- (b.south west);
+  \end{tikzpicture}\par}
+
+\begin{document}
+
+% ================================================================ Page de garde
+\begin{titlepage}
+\begin{tikzpicture}[remember picture, overlay]
+  % Bandeau sombre
+  \fill[nuit] (current page.north west) rectangle
+    ($(current page.north east)+(0,-15.5cm)$);
+  \fill[sang] ($(current page.north west)+(0,-15.5cm)$) rectangle
+    ($(current page.north east)+(0,-15.8cm)$);
+
+  % L'arène : une grille de pods, les morts barrés, le survivant en or
+  \begin{scope}[shift={($(current page.north)+(0,-4.3cm)$)}]
+    \foreach \i in {0,...,7} {
+      \pgfmathsetmacro{\x}{(\i-3.5)*1.55}
+      \node[regular polygon, regular polygon sides=6, minimum size=1.15cm,
+            line width=1.2pt, draw=kube!70, fill=kube!15!nuit] (p\i) at (\x,0) {};
+    }
+    \foreach \i in {0,2,4,6,7} {
+      \draw[sang, line width=1.6pt] ($(p\i.center)+(-0.22,-0.22)$) -- ++(0.44,0.44)
+                                    ($(p\i.center)+(-0.22,0.22)$) -- ++(0.44,-0.44);
+      \node[regular polygon, regular polygon sides=6, minimum size=1.15cm,
+            draw=gris, line width=1.2pt] at (p\i) {};
+    }
+    \foreach \i in {1,5} \fill[kube!80] (p\i.center) circle (0.14);
+    \node[regular polygon, regular polygon sides=6, minimum size=1.15cm,
+          line width=1.6pt, draw=or, fill=or!25!nuit] at (p3) {};
+    \fill[or] ($(p3.center)+(-0.22,-0.12)$) -- ++(0,0.3) -- ++(0.11,-0.15)
+      -- ++(0.11,0.22) -- ++(0.11,-0.22) -- ++(0.11,0.15) -- ++(0,-0.3) -- cycle;
+  \end{scope}
+
+  % Titre
+  \node[anchor=center, text=white] at ($(current page.north)+(0,-7.6cm)$)
+    {\titlefont\fontsize{54}{60}\selectfont POD ROYALE};
+  \node[anchor=center, text=or] at ($(current page.north)+(0,-9.2cm)$)
+    {\sffamily\Large Un battle royale où chaque pod est un guerrier};
+  \node[anchor=center, text=white!75, text width=13cm, align=center]
+    at ($(current page.north)+(0,-11.4cm)$)
+    {\sffamily\normalsize\hyphenpenalty=10000 Les guerriers s'attaquent en appelant le Service
+     \texttt{guerrier}~: c'est le load balancing de Kubernetes qui choisit
+     la victime au hasard. Le dernier survivant gagne.};
+
+  % Bas de page
+  \node[anchor=center, text=nuit] at ($(current page.center)+(0,-4.2cm)$)
+    {\titlefont\LARGE Compte rendu de projet};
+  \node[anchor=center, text=kube] at ($(current page.center)+(0,-5.3cm)$)
+    {\sffamily\Large INFO910 — Kubernetes};
+  \draw[gris!50, line width=0.6pt]
+    ($(current page.center)+(-3,-6.3cm)$) -- ($(current page.center)+(3,-6.3cm)$);
+  \node[anchor=center, text=nuit] at ($(current page.center)+(0,-7.3cm)$)
+    {\sffamily\large Palanca \quad\textcolor{sang}{\textbullet}\quad Grandy};
+  \node[anchor=center, text=gris] at ($(current page.south)+(0,2.2cm)$)
+    {\sffamily Octobre 2026};
+\end{tikzpicture}
+\end{titlepage}
+
+% ================================================================ Sommaire
+\tableofcontents
+\vspace{1.5em}
+
+\section*{Le principe}
+\addcontentsline{toc}{section}{Le principe}
+
+\textbf{Pod Royale} est un battle royale où chaque pod est un guerrier.
+Les guerriers s'attaquent en appelant le Service \code{guerrier}~: c'est le
+load balancing de Kubernetes qui choisit la victime au hasard. Les morts
+échouent leur \emph{readinessProbe} et sortent des endpoints. Le dernier
+survivant gagne, puis un nouveau round commence.
+
+La figure~\ref{fig:apercu} montre l'arène pendant un round~: les cartes des
+guerriers avec leurs points de vie, le fil des combats et le tableau d'honneur.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[font=\sffamily\footnotesize, x=1cm, y=1cm]
+  % Une carte de guerrier : #1 position, #2 nom, #3 pod, #4 PV, #5 PV max, #6 ligne du bas
+  \newcommand{\carte}[6]{%
+    \begin{scope}[shift={#1}]
+      \draw[kube, fill=kube!6, rounded corners=3pt, line width=0.8pt] (0,0) rectangle (4.3,2.1);
+      \node[anchor=north west, font=\sffamily\small\bfseries, text=nuit] at (0.15,2.0) {#2};
+      \node[anchor=north west, font=\ttfamily\scriptsize, text=gris] at (0.15,1.5) {#3};
+      \fill[gris!25] (0.2,0.8) rectangle (3.0,1.0);
+      \pgfmathsetmacro{\larg}{2.8*#4/#5}
+      \ifdim #4pt>0pt \fill[kube] (0.2,0.8) rectangle ++(\larg,0.2); \fi
+      \node[anchor=west, font=\sffamily\scriptsize, text=nuit] at (3.05,0.9) {#4/#5};
+      \node[anchor=south west, font=\sffamily\scriptsize, text=gris] at (0.15,0.1) {#6};
+    \end{scope}}
+  \node[anchor=west, font=\titlefont\normalsize, text=nuit] at (0,5.0) {POD ROYALE};
+  \node[anchor=east, text=nuit] at (15.2,5.0)
+    {ROUND 7 \quad \textcolor{sang}{\textbf{FIGHTING}} \quad 3\,/\,6 en vie};
+  \carte{(0,2.3)}{Gérard le Fourbe}{guerrier-7d9f8b-x2k4p}{98}{130}{2 victimes}
+  \carte{(4.6,2.3)}{Josiane la Sans-Pitié}{guerrier-7d9f8b-q8m1z}{41}{100}{1 victime \quad 1 redémarrage}
+  \carte{(0,0)}{Kevin l'Inoxydable}{guerrier-7d9f8b-z7c3d}{0}{160}{\textcolor{sang}{\textbf{mort}}}
+  \begin{scope}[shift={(4.6,0)}]
+    \draw[gris, dashed, rounded corners=3pt, line width=0.8pt] (0,0) rectangle (4.3,2.1);
+    \node[font=\sffamily\small\bfseries, text=gris] at (2.15,1.25) {Monique la Chauve};
+    \node[text=gris] at (2.15,0.7) {(en attente)};
+  \end{scope}
+  % Fil des combats et tableau d'honneur
+  \begin{scope}[shift={(9.2,0)}]
+    \draw[nuit, fill=fond, rounded corners=3pt, line width=0.8pt] (0,1.75) rectangle (6,4.4);
+    \node[anchor=north west, font=\titlefont\scriptsize, text=kube] at (0.15,4.3) {FIL DES COMBATS};
+    \node[anchor=north west, text width=5.3cm, align=left, text=nuit] at (0.15,3.85) {%
+      Josiane a OOMKillé Kevin l'Inoxydable\\
+      \textcolor{or!80!black}{\textbf{CRITIQUE~!}} Gérard inflige 28 dégâts\\
+      Ginette a été foudroyée par les dieux\\
+      ROUND 7 — 6 combattants. FIGHT~!};
+    \draw[nuit, fill=fond, rounded corners=3pt, line width=0.8pt] (0,0) rectangle (6,1.55);
+    \node[anchor=north west, font=\titlefont\scriptsize, text=or!80!black] at (0.15,1.45) {TABLEAU D'HONNEUR};
+    \node[anchor=north west, text width=5.3cm, align=left, text=nuit] at (0.15,1.0) {%
+      1. Gérard le Fourbe (Barbare) \hfill \textbf{3}\\
+      2. Josiane la Sans-Pitié (Archer) \hfill \textbf{2}};
+  \end{scope}
+\end{tikzpicture}
+\caption{Aperçu de l'arène pendant un round.}
+\label{fig:apercu}
+\end{figure}
+
+% ================================================================ Architecture
+\section{Architecture}
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+    font=\sffamily\small,
+    >={Stealth[length=2.6mm]},
+    boite/.style={draw=#1, fill=#1!8, rounded corners=4pt, line width=1pt,
+                  align=center, inner sep=6pt, minimum width=2.9cm},
+    pod/.style={regular polygon, regular polygon sides=6, draw=kube,
+                fill=kube!12, line width=0.9pt, minimum size=1.05cm, inner sep=0pt},
+    lien/.style={->, line width=0.9pt, color=nuit!80},
+    note/.style={font=\sffamily\footnotesize, color=gris, align=center},
+  ]
+  \node[boite=gris] (nav) {\textbf{Navigateur}};
+  \node[boite=kube, below=1.1cm of nav] (ing) {\textbf{Ingress}\\
+    \footnotesize\texttt{pod-royale.local}};
+  \node[boite=kube, below=1.1cm of ing] (arena) {\textbf{arena} (×1)\\
+    \footnotesize Flask + UI};
+  \node[boite=sang, right=4.2cm of arena] (redis) {\textbf{redis-0}\\
+    \footnotesize StatefulSet + PVC};
+
+  \node[pod, below left=1.7cm and 0.4cm of arena] (g1) {g1};
+  \node[pod, right=0.35cm of g1] (g2) {g2};
+  \node[pod, right=0.35cm of g2] (g3) {g3};
+  \node[right=0.15cm of g3, color=kube] (gdots) {\dots};
+  \node[draw=kube, dashed, rounded corners=6pt, line width=0.9pt, inner sep=9pt,
+        fit=(g1)(gdots), label={[font=\sffamily\footnotesize\bfseries,
+        color=kube]above:Deployment guerrier (×N)}] (dep) {};
+
+  \node[boite=kube, below=1.5cm of dep] (svc) {\textbf{Service \texttt{guerrier}}\\
+    \footnotesize ClusterIP};
+
+  \draw[lien] (nav) -- node[note, right] {\texttt{http://pod-royale.local}} (ing);
+  \draw[lien] (ing) -- (arena);
+  \draw[lien, <->] (arena) -- node[note, above] {lit / écrit l'état}
+                              node[note, below] {gère les rounds} (redis);
+  \draw[lien, <->] (dep.east) -| node[note, pos=0.25, below] {état, PV, events} (redis);
+
+  \foreach \g in {g1,g2,g3}
+    \draw[lien, color=sang] (\g.south) -- (\g.south |- svc.north);
+  \node[note, color=sang, left=0.2cm of svc.north west, anchor=south east]
+    {\texttt{POST /hit}};
+  \draw[lien, color=or!90!black, line width=1.1pt]
+    (svc.east) -- ++(1.4,0) |- node[note, pos=0.25, right, color=or!70!black]
+    {kube-proxy\\choisit la victime\\au hasard} ($(dep.east)+(0,-0.35)$);
+
+  \begin{scope}[on background layer]
+    \node[draw=gris!50, fill=fond, rounded corners=8pt, inner sep=14pt,
+          fit=(ing)(arena)(redis)(dep)(svc),
+          label={[font=\sffamily\footnotesize, color=gris, anchor=south east]
+                 south east:namespace \texttt{pod-royale}}] {};
+  \end{scope}
+\end{tikzpicture}
+\caption{Les composants de Pod Royale dans le cluster.}
+\end{figure}
+
+\begin{longtable}{L{2.3cm} L{13.2cm}}
+\rowcolor{nuit}\entete{Composant} & \entete{Rôle}\\
+\endhead
+\rowcolor{fond}\code{guerrier/} & Python 3.12 + Flask (waitress). Expose
+  \code{/hit}, \code{/ready}, \code{/healthz}, \code{/freeze}, \code{/}.
+  Une boucle d'attaque tourne dans un thread.\\
+\code{arena/} & Python 3.12 + Flask (waitress). L'arbitre~: il gère les rounds,
+  sert la page (Jinja2) et \code{/api/state}. \textbf{1 seul réplica.}\\
+\rowcolor{fond}\code{redis} & \code{redis:7-alpine} avec mot de passe et AOF,
+  sur un PVC. Stocke l'état du jeu (clés \code{pr:*}). La perte de PV et la
+  détection de mort se font dans un script Lua, donc de façon atomique.\\
+\bottomrule
+\end{longtable}
+
+\encadre{Chaque attaque ouvre une \textbf{nouvelle connexion TCP} (pas de
+\code{requests.Session}, en-tête \code{Connection: close}). Sans ça, le
+keep-alive collerait chaque attaquant à la même cible et le hasard du load
+balancing disparaîtrait.}
+
+% ================================================================ Notions
+\clearpage
+\section{Notions du cours et où elles apparaissent}
+
+\begin{longtable}{L{3.5cm} L{12.0cm}}
+\rowcolor{nuit}\entete{Notion} & \entete{Où dans le projet}\\
+\endhead
+\rowcolor{fond}\textbf{Pod} & Chaque guerrier est un pod. Son nom de pod donne
+  son nom d'affichage («~Gérard le Fourbe~»).\\
+\textbf{Namespace} & \code{k8s/00-namespace.yaml}~: tout vit dans
+  \code{pod-royale}, et \code{reset.sh} supprime tout d'un coup.\\
+\rowcolor{fond}\textbf{Deployment} & \code{k8s/20-guerrier-deployment.yaml}
+  (6 réplicas, RollingUpdate \code{maxSurge: 2} / \code{maxUnavailable: 1}) et
+  \code{k8s/30-arena-deployment.yaml} (1 réplica, \code{Recreate}).\\
+\textbf{Service et DNS} & \code{k8s/21-guerrier-service.yaml}~: la cible des
+  attaques, le load balancing choisit la victime.
+  \code{redis.pod-royale.svc.cluster.local} est résolu par le DNS du cluster.\\
+\rowcolor{fond}\textbf{StatefulSet} & \code{k8s/10-redis-statefulset.yaml}~:
+  identité stable \code{redis-0}.\\
+\textbf{PVC} & \code{volumeClaimTemplates} de Redis~: le tableau d'honneur
+  survit à \code{kubectl delete pod redis-0}.\\
+\rowcolor{fond}\textbf{ConfigMap (env)} & \code{jeu-config} via
+  \code{envFrom}~: \code{ATTACK\_INTERVAL\_MS}, \code{VICTORY\_PAUSE\_S},
+  \code{REDIS\_HOST}…\\
+\textbf{ConfigMap (volume)} & La même ConfigMap, montée en
+  \code{/config/classes.json}~: les classes de guerriers.\\
+\rowcolor{fond}\textbf{Secret} & \code{k8s/01-secret-redis.yaml}~:
+  \code{REDIS\_PASSWORD} injecté par \code{secretKeyRef}. Aucun mot de passe en
+  clair dans les Deployments.\\
+\textbf{readinessProbe} & \code{GET /ready} renvoie 503 quand le guerrier est
+  mort, donc il sort des endpoints en $\sim$2\,s (\code{periodSeconds: 2},
+  \code{failureThreshold: 1}).\\
+\rowcolor{fond}\textbf{livenessProbe} & \code{GET /healthz} renvoie 500 si la
+  boucle d'attaque est figée (\code{/freeze}), donc le conteneur redémarre
+  (RESTARTS +1).\\
+\textbf{startupProbe} & Laisse jusqu'à 60\,s au guerrier pour démarrer avant que
+  la livenessProbe prenne le relais~: sur un nœud chargé, un démarrage lent ne
+  finit plus en CrashLoopBackOff.\\
+\rowcolor{fond}\textbf{requests / limits} & Sur tous les conteneurs (ex.
+  guerrier~: \code{20m/48Mi} $\rightarrow$ \code{500m/128Mi}).\\
+\textbf{Downward API} & \code{POD\_NAME}, \code{POD\_IP}, \code{NODE\_NAME}
+  injectés depuis \code{metadata.name}, \code{status.podIP},
+  \code{spec.nodeName}.\\
+\rowcolor{fond}\textbf{Arrêt propre (SIGTERM)} &
+  \code{terminationGracePeriodSeconds: 10}~: le guerrier annonce «~foudroyé par
+  les dieux~» avant de partir.\\
+\textbf{Ingress} & \code{k8s/40-ingress.yaml}~: \code{pod-royale.local}
+  $\rightarrow$ \code{arena:80}. Seule l'arène est exposée.\\
+\rowcolor{fond}\textbf{Gateway API (bonus)} &
+  \code{k8s/bonus/41-httproute.yaml}~: \code{Gateway} + \code{HTTPRoute}
+  équivalents à l'Ingress. Non appliqués par défaut.\\
+\bottomrule
+\end{longtable}
+
+% ================================================================ Installation
+\section{Installation (minikube)}
+
+Prérequis~: Docker, \code{kubectl}, \code{minikube} (ou \code{kind}).
+
+\subsection{En une commande}
+
+\begin{Code}
+./scripts/up.sh                       # macOS, Linux, WSL, Git Bash
+\end{Code}
+
+\begin{Code}
+powershell -ExecutionPolicy Bypass -File scripts\up.ps1    # Windows
+\end{Code}
+
+Le script démarre Docker Desktop s'il le faut (macOS et Windows), puis minikube
+si aucun cluster ne répond. Il construit et charge les images, déploie et attend
+que tout soit prêt. Il ouvre ensuite l'arène sur
+\textbf{\code{http://localhost:8080}} par un port-forward~: pas de \code{sudo},
+pas de \code{minikube tunnel}, pas de fichier hosts à modifier, quel que soit
+l'OS.
+
+\begin{longtable}{L{4.5cm} L{3.5cm} L{7.0cm}}
+\rowcolor{nuit}\entete{\code{up.sh}} & \entete{\code{up.ps1}} & \entete{Effet}\\
+\endhead
+\rowcolor{fond}\code{PORT=9090} & \code{-Port 9090} & Change le port local.\\
+\code{NO\_BROWSER=1} & \code{-NoBrowser} & N'ouvre pas le navigateur.\\
+\rowcolor{fond}\code{INGRESS=1} & \code{-Ingress} & Active l'addon ingress pour
+  \code{pod-royale.local}.\\
+\bottomrule
+\end{longtable}
+
+Ctrl+C coupe l'accès, et le jeu continue de tourner dans le cluster.
+
+\subsection{Étape par étape}
+
+\begin{Code}
+# 1. Cluster + contrôleur Ingress
+minikube start
+minikube addons enable ingress
+
+# 2. Construire les images et les charger dans minikube
+./scripts/build.sh
+
+# 3. Déployer et attendre que tout soit prêt
+./scripts/deploy.sh
+
+# 4. Résoudre pod-royale.local vers le cluster
+#    Linux, ou minikube avec un driver VM :
+echo "$(minikube ip) pod-royale.local" | sudo tee -a /etc/hosts
+#    macOS avec le driver docker : l'IP de minikube n'est pas
+#    joignable depuis le Mac. Lancer « minikube tunnel » dans un
+#    autre terminal (à laisser ouvert), puis :
+echo "127.0.0.1 pod-royale.local" | sudo tee -a /etc/hosts
+
+# 5. Ouvrir http://pod-royale.local
+\end{Code}
+
+\textbf{Sans Ingress~:}
+
+\begin{Code}
+kubectl -n pod-royale port-forward svc/arena 8080:80
+# puis http://localhost:8080
+\end{Code}
+
+Pour tout supprimer~: \code{./scripts/reset.sh} (le PVC, et donc le tableau
+d'honneur, part avec le namespace).
+
+% ================================================================ Démo
+\section{Déroulé de la démo}
+
+\code{./scripts/demo.sh} enchaîne les étapes, avec une pause entre chacune.
+L'arène reste ouverte à côté.
+
+\begin{longtable}{>{\centering\arraybackslash}p{0.5cm} L{7.2cm} L{7.2cm}}
+\rowcolor{nuit}\entete{\#} & \entete{Commande} & \entete{Ce qu'on voit dans l'arène}\\
+\endhead
+\rowcolor{fond}1 & \code{kubectl get all -n pod-royale} & Tous les objets du jeu.\\
+2 & \code{kubectl get endpoints guerrier -n pod-royale} (pendant un round) &
+  Les morts disparaissent des endpoints (readinessProbe).\\
+\rowcolor{fond}3 & \code{kubectl scale deploy/guerrier -{}-replicas=12} &
+  Des renforts arrivent, en spectateurs jusqu'au prochain round.\\
+4 & \code{kubectl delete pod <guerrier>} & «~X a été foudroyé par les
+  dieux~», puis un nouveau pod apparaît.\\
+\rowcolor{fond}5 & \code{kubectl exec <pod> -{}- curl -X POST
+  localhost:8080/freeze} & Le guerrier se fige, la livenessProbe échoue,
+  RESTARTS +1 et «~X revient d'entre les morts~».\\
+6 & \code{kubectl delete pod redis-0} & Redis redémarre et le tableau
+  d'honneur est conservé (PVC).\\
+\rowcolor{fond}7 & Patch de la ConfigMap \code{ATTACK\_INTERVAL\_MS=400} +
+  \code{kubectl rollout restart deploy/guerrier} & Mode frénésie~: les rounds
+  durent quelques secondes.\\
+8 & \code{kubectl scale deploy/guerrier -{}-replicas=2} & Le duel final.\\
+\bottomrule
+\end{longtable}
+
+\textbf{Dans l'arène}, chaque coup réellement échangé entre deux pods est rejoué
+par de petits gladiateurs~: flèches pour les archers, boules de feu pour les
+mages, entailles à l'épée, à la hache ou à la dague, et le sysadmin qui frappe
+au clavier. Un \textbf{coup critique} se voit de loin~: aura dorée pendant la
+charge, ralenti, flash et texte «~CRITIQUE~!~». La \textbf{barre d'espace} met
+la scène en pause pour expliquer ce qui se passe.
+
+\encadre{Pour voir le hasard du load balancing~:\\[4pt]
+\code{kubectl -n pod-royale logs -l app=guerrier -{}-prefix | grep '}$\rightarrow$\code{'}\\[4pt]
+Chaque ligne indique quel pod a frappé quel pod.}
+
+% ================================================================ CORS
+\section{Pourquoi pas de CORS ici}
+
+Le navigateur ne parle \textbf{qu'à une seule origine}~:
+\code{http://pod-royale.local}, c'est-à-dire l'arène derrière l'Ingress. La page
+est rendue côté serveur par Jinja2, et \code{arena.js} appelle
+\code{fetch('/api/state')} avec une URL relative, donc sur la même origine. Il
+n'y a jamais de requête cross-origin, et aucun en-tête CORS n'est nécessaire.
+
+Les guerriers et Redis ne sont \textbf{pas exposés} hors du cluster (Services
+ClusterIP, pas d'Ingress). L'arène lit l'état dans Redis côté serveur, puis le
+renvoie au navigateur. C'est plus simple et plus sûr~: la surface exposée se
+limite à une seule application.
+
+% ================================================================ Structure
+\clearpage
+\section{Structure du dépôt}
+
+\begin{longtable}{L{2.3cm} L{13.2cm}}
+\rowcolor{nuit}\entete{Dossier} & \entete{Contenu}\\
+\endhead
+\rowcolor{fond}\code{guerrier/} & \code{app.py}, \code{names.py}, \code{Dockerfile}\\
+\code{arena/} & \code{app.py}, \code{templates/}, \code{static/}, \code{Dockerfile}\\
+\rowcolor{fond}\code{k8s/} & Manifests numérotés dans l'ordre d'application
+  (+ \code{bonus/}~: Gateway API)\\
+\code{scripts/} & \code{up.sh} / \code{up.ps1} (tout en un), \code{build.sh},
+  \code{deploy.sh}, \code{demo.sh}, \code{reset.sh}\\
+\bottomrule
+\end{longtable}
+
+\end{document}
